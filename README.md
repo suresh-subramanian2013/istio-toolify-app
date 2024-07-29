@@ -60,9 +60,9 @@ eksctl create cluster --name=istio --region=us-east-1 --nodes 2 --node-type t3.m
 ### Step 2 Create & Associate IAM OIDC Provider for our EKS Cluster for Service Account Creation
 
 eksctl utils associate-iam-oidc-provider \
-    --region us-east-1 \
-    --cluster <cluster-name> \
-    --approve
+--region us-east-1 \
+--cluster <cluster-name> \
+--approve
 
 ## Step 3 Cluster Autoscaler Setup
 # IAM Policy Name "cluster-autoscaling-policy"
@@ -100,7 +100,7 @@ eksctl utils associate-iam-oidc-provider \
  --cluster=<cluster-name> \
  --namespace=kube-system \
  --name=cluster-autoscaler \
- --attach-policy-arn=arn:aws:iam::471112966640:policy/cluster-autoscaling-policy \
+ --attach-policy-arn=arn:aws:iam::<account-id>:policy/cluster-autoscaling-policy \
  --override-existing-serviceaccounts \
  --approve
 
@@ -144,7 +144,7 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=<region-code> \
   --set vpcId=<vpc-xxxxxxxx> \
-  --set image.repository=<account-id>.dkr.ecr.<region-code>.amazonaws.com/amazon/aws-load-balancer-controller
+  --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller
 
 
 ## Istio Setup
