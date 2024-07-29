@@ -54,10 +54,62 @@ docker-compose up -d
 
 ## Deployment
 
-### K8s EKS Setup
+### Step 1 K8s EKS Setup
+eksctl create cluster --name=istio --region=us-east-1 --nodes 2 --node-type t3.medium
+
+### Step 2 Create & Associate IAM OIDC Provider for our EKS Cluster for Service Account Creation
+
+eksctl utils associate-iam-oidc-provider \
+    --region us-east-1 \
+    --cluster istio \
+    --approve
+
+## Step 3 Cluster Autoscaler Setup
+# IAM Policy Name "cluster-autoscaling-policy"
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling:DescribeAutoScalingGroups",
+        "autoscaling:DescribeAutoScalingInstances",
+        "autoscaling:DescribeLaunchConfigurations",
+        "autoscaling:DescribeTags",
+        "autoscaling:SetDesiredCapacity",
+        "autoscaling:TerminateInstanceInAutoScalingGroup",
+        "ec2:DescribeLaunchTemplateVersions",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeInstances",
+        "ec2:DescribeRegions",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeLaunchTemplates",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeVpcs",
+        "iam:ListRoles",
+        "eks:DescribeCluster"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+## Create SA with IAM policy
+ eksctl create iamserviceaccount \
+ --cluster=istio \
+ --namespace=kube-system \
+ --name=cluster-autoscaler \
+ --attach-policy-arn=arn:aws:iam::471112966640:policy/cluster-autoscaling-policy \
+ --override-existing-serviceaccounts \
+ --approve
+
+# Install Cluster Autoscaler
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
 
 ## ALB Ingress Controller Setup
-# Create IAM Policy
+# Create IAM Policy Name - " 
+
 curl -o iam_policy_latest.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
 
 # Create Service Account
@@ -82,31 +134,8 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set image.repository=<account>.dkr.ecr.<region-code>.amazonaws.com/amazon/aws-load-balancer-controller
 
 
-## Cluster Autoscaler Setup
-# IAM Policy
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "autoscaling:DescribeAutoScalingGroups",
-                "autoscaling:DescribeAutoScalingInstances",
-                "autoscaling:DescribeLaunchConfigurations",
-                "autoscaling:DescribeTags",
-                "autoscaling:SetDesiredCapacity",
-                "autoscaling:TerminateInstanceInAutoScalingGroup",
-                "ec2:DescribeLaunchTemplateVersions"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
 
-# Install Cluster Autoscaler
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
-
-# Update the command in Cluter Autoscaler
+# Update the command in Cluter Autoscaler if need
 - ./cluster-autoscaler
 - --v=4
 - --stderrthreshold=info
