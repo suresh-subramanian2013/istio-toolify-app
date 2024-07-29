@@ -61,7 +61,7 @@ eksctl create cluster --name=istio --region=us-east-1 --nodes 2 --node-type t3.m
 
 eksctl utils associate-iam-oidc-provider \
     --region us-east-1 \
-    --cluster istio \
+    --cluster <cluster-name> \
     --approve
 
 ## Step 3 Cluster Autoscaler Setup
@@ -97,7 +97,7 @@ eksctl utils associate-iam-oidc-provider \
 
 ## Create SA with IAM policy
  eksctl create iamserviceaccount \
- --cluster=istio \
+ --cluster=<cluster-name> \
  --namespace=kube-system \
  --name=cluster-autoscaler \
  --attach-policy-arn=arn:aws:iam::471112966640:policy/cluster-autoscaling-policy \
@@ -107,35 +107,7 @@ eksctl utils associate-iam-oidc-provider \
 # Install Cluster Autoscaler
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
 
-## ALB Ingress Controller Setup
-# Create IAM Policy Name - " 
-
-curl -o iam_policy_latest.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
-
-# Create Service Account
-eksctl create iamserviceaccount \
-  --cluster=my_cluster \
-  --namespace=kube-system \
-  --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::<account>:policy/AWSLoadBalancerControllerIAMPolicy \
-  --override-existing-serviceaccounts \
-  --approve
-
-# Install ALB Ingress Controller
-helm repo add eks https://aws.github.io/eks-charts
-helm repo update
-helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-  -n kube-system \
-  --set clusterName=<cluster-name> \
-  --set serviceAccount.create=false \
-  --set serviceAccount.name=aws-load-balancer-controller \
-  --set region=<region-code> \
-  --set vpcId=<vpc-xxxxxxxx> \
-  --set image.repository=<account>.dkr.ecr.<region-code>.amazonaws.com/amazon/aws-load-balancer-controller
-
-
-
-# Update the command in Cluter Autoscaler if need
+# Update the command in Cluter Autoscaler - if need
 - ./cluster-autoscaler
 - --v=4
 - --stderrthreshold=info
@@ -146,6 +118,34 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 - --balance-similar-node-groups
 - --skip-nodes-with-system-pods=true
 - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<cluster-name>
+
+## ALB Ingress Controller Setup
+# Create IAM Policy Name - " 
+
+curl -o iam_policy_latest.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+
+# Create Service Account
+eksctl create iamserviceaccount \
+  --cluster=<cluster-name> \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::<account>:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+
+
+## Step 3 Install ALB Ingress Controller
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=<cluster-name> \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=<region-code> \
+  --set vpcId=<vpc-xxxxxxxx> \
+  --set image.repository=<account-id>.dkr.ecr.<region-code>.amazonaws.com/amazon/aws-load-balancer-controller
+
 
 ## Istio Setup
 # Install Istio
