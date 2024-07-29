@@ -206,7 +206,12 @@ https://medium.com/@harik8/jenkins-master-slave-on-k8s-c3543ed823d
   ]
 }
 
-# Install EBS
+## Craete SA for EBS csi driver
+eksctl create iamserviceaccount --cluster=istio --namespace=kube-system --name=ebs-csi-controller-sa --attach-policy-arn=arn:aws:iam::<account-iod>:policy/ebs-csi-policy \
+--override-existing-serviceaccounts \
+--approve
+
+# Install EBS CSI driver
 helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver/
 helm repo update
 helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
